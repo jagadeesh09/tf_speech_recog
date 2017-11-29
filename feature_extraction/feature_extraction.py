@@ -3,7 +3,7 @@
                                 KAGGLE FEATURE EXTRACTOR
     Author: Harsh Bhate
     Date: November 29, 2017
-    Version: 1.0
+    Version: 1.01
     Description:
 '''
 ################################################################################
@@ -32,7 +32,6 @@ def folder_list (dataset_root):
             files.append(folder)
         else:
             continue
-
     print "\t\tTHE FILE NAMES ARE EXTRACTED"
     for folder in files:
         print "\n\tFolder Name:",folder
@@ -83,6 +82,7 @@ def file_runner(files):
                 pkl_dump(pkl_filename,picture)
             else:
                 continue
+        os.chdir("..")
     print "\n\t\tFeature Extraction is done!"
 
 '''Function to extract features'''
