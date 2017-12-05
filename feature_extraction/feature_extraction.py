@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 ################################################################################
 '''Declare File address here'''
 
-dataset_root = "/path/to/dataset"
-feature_dataset_root = "path/to/pkl_saver"
+dataset_root = "/home/uvuser/Documents/train/train/audio"
+feature_dataset_root = "/home/uvuser/Documents/train/train/audio/pkls"
 ################################################################################
 
 '''List all the audio folders in the database and returns them'''
@@ -63,8 +63,8 @@ def pkl_namer(folder):
     pkl_name =  feature_dataset_root+"/"+folder+".pkl"
     print "\n\t\t PICKLE Destination:",pkl_name
     return pkl_name
-'''PKL Write'''
 
+'''PKL Write'''
 def pkl_dump(pkl_filename,picture):
     with open(pkl_filename,'a') as f:
         pickle.dump(picture,f)
@@ -129,6 +129,7 @@ def feature_extractor(track):
     #print "\n\tShape of the MFCC Deltas:",np.shape(mfcc)
     picture = np.stack([log_S,mfcc],axis=1)
     #print "\n\tShape of picture",np.shape(picture)
+    return picture
 ################################################################################
 
 if __name__ == "__main__":
