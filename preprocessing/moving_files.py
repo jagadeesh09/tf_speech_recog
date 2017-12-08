@@ -15,8 +15,8 @@ import shutil
                 txt_file_path : Path for the testing_list.txt file
                 dir_path      : Path for train folder of dataset             '''
 
-txt_file_path = '/home/uv/jagadeesh/kaggle/speech/input/train/testing_list.txt'
-dir_path = '/home/uv/jagadeesh/kaggle/speech/input/train/'
+txt_file_path = '/home/uvuser/Documents/train/train/testing_list.txt'
+dir_path = '/home/uvuser/Documents/train/train/'
 
 if not os.path.exists(dir_path+'valid'):
     os.makedirs(dir_path+ 'valid')
