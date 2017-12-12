@@ -16,24 +16,26 @@ import numpy as np
 
 
 ''' Setting up different Variables and initiating seed '''
-dir_path = ''    # Path for the pkl files folder
+dir_path = '/run/user/1000/gvfs/smb-share:server=uncannynas,share=uvdata/Audio/Kaggle/train/pkls/'    # Path for the pkl files folder
 random.seed(338)
-int_length = 14   # Number of sets
+int_length = 4   # Number of sets
 
-
-file_list = os.listdir(dir_path)
-file_list = [os.path.join(dir_path, f) for f in file_list ]
-
-''' For loading pickle file continuously '''
 def pickleLoader(pklFile):
     try:
         while True:
             yield pickle.load(pklFile)
     except EOFError:
         pass
+'''
+file_list = os.listdir(dir_path)
+file_list = [os.path.join(dir_path, f) for f in file_list ]
+#print(file_list)
+
+
 
 
 for file_ in file_list:
+    print(file_)
     with open(file_) as f:
         data = []
         for event in pickleLoader(f):
@@ -42,25 +44,29 @@ for file_ in file_list:
             data.append(c)
         print(file_)
         with open(file_[:-4]+'1.pkl','wb') as g:
-            pickle.dump(data, g, protocol=cPickle.HIGHEST_PROTOCOL)
-
+            pickle.dump(data, g, protocol=pickle.HIGHEST_PROTOCOL)
+'''
+file_list = os.listdir(dir_path)
 file_list = [os.path.join(dir_path, f) for f in file_list if f.endswith('1.pkl')]
 
-
-for i in range(int_len):
+with open('outfile.txt', 'w') as fp:
+    pickle.dump(file_list, fp)
+for i in range(int_length):
+    print(" I am currently on %d set" %(i))
     data = []
     labels = []
     class_count = 0
     for file_ in file_list:
+        print(file_)
         with open(file_) as f:
             for event in pickleLoader(f):
                 class_data = event
         num_objects = np.shape(class_data)
         class_count = class_count + 1
-        int_class = math.floor(num_objects[0]/14)
-        req_data = class_data[i* int_class: (i+1) * int_class]
-        cur_labels = [class_count] * (((i+1)* int_class) - (i*class_int))
+        int_class = math.floor(num_objects[0]/(int_length))
+        req_data = class_data[int(i* int_class): int((i+1) * int_class)]
+        cur_labels = [class_count] * (int(((i+1)* int_class) - (i*int_class)))
         labels.append(cur_labels)
         data.append(req_data)
-    with open('set'+ str(i)+'.pkl', "wb") as g:
-        pickle.dump((data,labels), g, protocol=cPickle.HIGHEST_PROTOCOL)
+    with open(dir_path+'set'+ str(i)+'.pkl', "wb") as g:
+        pickle.dump((data,labels), g, protocol=pickle.HIGHEST_PROTOCOL)

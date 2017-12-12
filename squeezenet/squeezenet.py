@@ -42,7 +42,7 @@ def squeezenet(features,labels,mode):
     width = 81# input witdth
     height = 192# input height
     channels = 2#input channels
-    num_classes = 30# Number of classess
+    #num_classes = 30# Number of classess
     ''' Input Layer'''
     input_layer = tf.reshape(features["x"],[-1,width,height,channels])
 
@@ -91,8 +91,9 @@ def squeezenet(features,labels,mode):
     output = tf.layers.average_pooling2d(inputs=conv10, pool_size= [4,11], strides = (1,1))
 
     logits = tf.layers.dense(inputs=output, units=num_classes)
-    logits = tf.reshape(logits,(100,30))
-    predictions = {
+    logits = tf.reshape(logits,(100,num_classes))
+    return logits
+    """predictions = {
         "classes": tf.argmax(input=logits, axis=1),
         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
@@ -116,8 +117,18 @@ def squeezenet(features,labels,mode):
                 "accuracy": tf.metrics.accuracy(
         labels=labels, predictions=predictions["classes"])}
         return tf.estimator.EstimatorSpec(
-                mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
-
+                mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)"""
+def loss(logits, labels):
+    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=num_classes)
+    loss = tf.losses.softmax_cross_entropy(
+                onehot_labels=onehot_labels, logits=logits)
+    return loss
+def training(loss,learning_rate):
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+    train_op = optimizer.minimize(
+        loss=loss,
+        global_step=tf.train.get_global_step())
+    return train_op
 
 def pickleLoader(pklFile):
     try:
