@@ -11,40 +11,40 @@ import numpy as np
 
 
 tf.logging.set_verbosity(tf.logging.INFO)
-
+num_classes = 30
 model_dir =  'check_points/'# Directory to store checkpoints
 def fire_module(input, squeeze_depth, expand_depth):
     '''Squeezing Layer'''
-    print("input_shape")
-    print(input.get_shape())
+    #print("input_shape")
+    #print(input.get_shape())
     squeeze_output = tf.layers.conv2d(inputs = input, filters = squeeze_depth,
                             kernel_size = [1,1])
-    print("squeeze output shape")
-    print(squeeze_output.get_shape())
+    #print("squeeze output shape")
+    #print(squeeze_output.get_shape())
     ''' Expand Layer'''
     expand_layer1x1 = tf.layers.conv2d(inputs = squeeze_output, filters =
                             expand_depth, kernel_size = [1,1])
-    print("expand1 output shape")
-    print(expand_layer1x1.get_shape())
+    #print("expand1 output shape")
+    #print(expand_layer1x1.get_shape())
     expand_layer3x3 = tf.layers.conv2d(inputs = squeeze_output, filters =
                             expand_depth, kernel_size = [3,3],padding="same")
-    print("expand3 output shape")
-    print(expand_layer3x3.get_shape())
+    #print("expand3 output shape")
+    #print(expand_layer3x3.get_shape())
     fire_module_output = tf.concat([expand_layer1x1, expand_layer3x3], axis = 3)
 
     return fire_module_output
 
 
 
-def squeezenet(features,labels,mode):
-    print("mode")
-    print(mode)
+def inference(features,batch_size):
+    #print("mode")
+    #print(mode)
     width = 81# input witdth
     height = 192# input height
     channels = 2#input channels
     #num_classes = 30# Number of classess
     ''' Input Layer'''
-    input_layer = tf.reshape(features["x"],[-1,width,height,channels])
+    input_layer = tf.reshape(features,[-1,width,height,channels])
 
     ''' Layer - 1 '''
     conv1 = tf.layers.conv2d(inputs=input_layer, filters=96,
@@ -82,7 +82,8 @@ def squeezenet(features,labels,mode):
     fire_9 = fire_module(max_pool_3, 64, 256)
 
     ''' Drop out layer '''
-    dropout = tf.layers.dropout(fire_9, rate= 0.5,training=(mode == tf.estimator.ModeKeys.TRAIN))
+    #dropout = tf.layers.dropout(fire_9, rate= 0.5,training=(mode == tf.estimator.ModeKeys.TRAIN))
+    dropout = tf.layers.dropout(fire_9, rate= 0.5)
 
     ''' Layer - 2 '''
     conv10 = tf.layers.conv2d(inputs=dropout, filters=num_classes,
@@ -91,7 +92,7 @@ def squeezenet(features,labels,mode):
     output = tf.layers.average_pooling2d(inputs=conv10, pool_size= [4,11], strides = (1,1))
 
     logits = tf.layers.dense(inputs=output, units=num_classes)
-    logits = tf.reshape(logits,(100,num_classes))
+    logits = tf.reshape(logits,(batch_size,num_classes))
     return logits
     """predictions = {
         "classes": tf.argmax(input=logits, axis=1),
