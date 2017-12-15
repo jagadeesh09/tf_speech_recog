@@ -9,7 +9,7 @@ import time
 dir_path = '/home/uv/jagadeesh/kaggle/speech/tf_speech_recog/squeezenet/'
 learning_rate = 0.01
 batch_size = 128
-num_epochs = 200
+num_epochs = 300
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
@@ -99,10 +99,6 @@ def inputs(batch_size, num_epochs):
     ''' Creating list of filepaths'''
     for file_ in filename:
         file_path.append(dir_path+file_)
-    print(filename)
-    print(file_path)
-    #file_path = dir_path + 'set1.tfrecords'
-    print(file_path)
     filename_queue = tf.train.string_input_producer(file_path, num_epochs=num_epochs)
     image,label = read_and_decode(filename_queue)
     #image,label = simple_read_and_decode(file_path)
@@ -116,15 +112,18 @@ def inputs(batch_size, num_epochs):
 def do_training():
     with tf.Graph().as_default():
         with tf.Session() as sess:
+            global_step = tf.train.get_or_create_global_step()
             images,labels = inputs(batch_size,num_epochs)
             logits = squeezenet.inference(images,batch_size)
             loss = squeezenet.loss(logits,labels)
-            train_op = squeezenet.training(loss, learning_rate)
+            train_op = squeezenet.training(loss, learning_rate,global_step)
             init_op = tf.group(tf.global_variables_initializer(),
                 tf.local_variables_initializer())
             sess.run(init_op)
+            saver = tf.train.Saver()
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+            saver.restore(sess,'speech_model/model-4601')
             try:
                 step =0
                 while not coord.should_stop():
@@ -133,12 +132,13 @@ def do_training():
                     duration = time.time() - time_
                     if(step % 50 == 0):
                         print("Step: %d Loss : %.3f Duration: %.3f seconds" %(step,loss_value,duration))
+                        saver.save(sess,'speech_model/model',global_step=tf.train.get_global_step(),write_meta_graph=False)
                     step = step + 1
             except tf.errors.OutOfRangeError:
                 print('Done training for %d epochs, %d steps.' % (num_epochs, step))
             finally:
                 coord.request_stop()
-
+            #saver.save(sess,'speech_model/',global_step=1000)
             coord.join(threads)
             sess.close()
 def main(unused_argv):

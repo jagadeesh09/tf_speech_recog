@@ -124,11 +124,11 @@ def loss(logits, labels):
     loss = tf.losses.softmax_cross_entropy(
                 onehot_labels=onehot_labels, logits=logits)
     return loss
-def training(loss,learning_rate):
+def training(loss,learning_rate,global_step):
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
     train_op = optimizer.minimize(
         loss=loss,
-        global_step=tf.train.get_global_step())
+        global_step=global_step)
     return train_op
 
 def pickleLoader(pklFile):
