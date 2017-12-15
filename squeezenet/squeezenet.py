@@ -44,7 +44,7 @@ def inference(features,batch_size):
     channels = 2#input channels
     #num_classes = 30# Number of classess
     ''' Input Layer'''
-    input_layer = tf.reshape(features,[-1,width,height,channels])
+    input_layer = tf.reshape(features,[-1,height,width,channels])
 
     ''' Layer - 1 '''
     conv1 = tf.layers.conv2d(inputs=input_layer, filters=96,
@@ -89,7 +89,7 @@ def inference(features,batch_size):
     conv10 = tf.layers.conv2d(inputs=dropout, filters=num_classes,
                     kernel_size = [1,1],
                     activation = tf.nn.relu)
-    output = tf.layers.average_pooling2d(inputs=conv10, pool_size= [4,11], strides = (1,1))
+    output = tf.layers.average_pooling2d(inputs=conv10, pool_size= [11,4], strides = (1,1))
 
     logits = tf.layers.dense(inputs=output, units=num_classes)
     logits = tf.reshape(logits,(batch_size,num_classes))
@@ -123,14 +123,22 @@ def loss(logits, labels):
     onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=num_classes)
     loss = tf.losses.softmax_cross_entropy(
                 onehot_labels=onehot_labels, logits=logits)
+    correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(onehot_labels, axis=1))
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar("Accuracy",acc)
     return loss
 def training(loss,learning_rate,global_step):
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
     train_op = optimizer.minimize(
         loss=loss,
         global_step=global_step)
     return train_op
-
+def accuracy(logits,labels):
+    correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(labels, axis=1))
+    print(correct_prediction)
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    print("I am failing inside accuracy")
+    return acc
 def pickleLoader(pklFile):
     try:
         while True:

@@ -7,8 +7,8 @@ import pdb
 import time
 #key,value = reader.read(file_path)
 dir_path = '/home/uv/jagadeesh/kaggle/speech/tf_speech_recog/squeezenet/'
-learning_rate = 0.01
-batch_size = 128
+learning_rate = 0.001
+batch_size = 64
 num_epochs = 300
 def read_and_decode(filename_queue):
     reader = tf.TFRecordReader()
@@ -116,20 +116,41 @@ def do_training():
             images,labels = inputs(batch_size,num_epochs)
             logits = squeezenet.inference(images,batch_size)
             loss = squeezenet.loss(logits,labels)
+            #accuracy = squeezenet.accuracy(logits,labels)
+            tf.summary.scalar('cross_entropy',loss)
+            #tf.summary.scalar('Accuracy',accuracy)
+
+            tf.summary.tensor_summary('Labels',labels)
+            #tf.summary.histogram("weights1_1", filter1_1)
             train_op = squeezenet.training(loss, learning_rate,global_step)
             init_op = tf.group(tf.global_variables_initializer(),
                 tf.local_variables_initializer())
             sess.run(init_op)
             saver = tf.train.Saver()
             coord = tf.train.Coordinator()
+            writer = tf.summary.FileWriter("output", sess.graph)
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            saver.restore(sess,'speech_model/model-4601')
+            #tf.summary.image('images',images[1])
+            ckpt = tf.train.get_checkpoint_state('speech_model/')
+            if ckpt and ckpt.model_checkpoint_path:
+                saver.restore(sess,ckpt.model_checkpoint_path)
+            #writer.close()
+            merged_summary = tf.summary.merge_all()
+            #saver.restore(sess,'speech_model/model-4601')
             try:
                 step =0
                 while not coord.should_stop():
                     time_ = time.time()
-                    _, loss_value = sess.run([train_op, loss])
+                    print("groundtruth")
+                    print(sess.run(labels))
+                    print("predicted labels")
+                    print(sess.run(logits))
+                    _, loss_value,summary = sess.run([train_op, loss,merged_summary])
+                    #tf.summary.scalar('cross_entropy',loss_value)
                     duration = time.time() - time_
+
+                    #s = sess.run(merged_summary)
+                    writer.add_summary(summary,step)
                     if(step % 50 == 0):
                         print("Step: %d Loss : %.3f Duration: %.3f seconds" %(step,loss_value,duration))
                         saver.save(sess,'speech_model/model',global_step=tf.train.get_global_step(),write_meta_graph=False)
@@ -139,6 +160,7 @@ def do_training():
             finally:
                 coord.request_stop()
             #saver.save(sess,'speech_model/',global_step=1000)
+            writer.close()
             coord.join(threads)
             sess.close()
 def main(unused_argv):
