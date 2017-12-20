@@ -14,24 +14,6 @@ class_labels = 'bed bird cat dog down eight five four go happy house left marvin
 id2name = {i: name for i, name in enumerate(class_labels)}
 name2id = {name: i for i, name in id2name.items()}
 cnt = 0
-
-
-from tqdm import tqdm
-# now we want to predict!
-paths = glob(os.path.join(data_dir, 'test/audio/*wav'))
-
-def test_data_generator(data):
-    def generator():
-        for path in data:
-            _, image = wavfile.read(path)
-            image = image.astype(np.float32) / np.iinfo(np.int16).max
-            fname = os.path.basename(path)
-            yield dict(
-                sample=np.string_(fname),
-                image=image,
-            )
-
-    return generator
 def load_data(data_dir):
     pattern = re.compile("(.+\/)?(\w+)\/([^_]+)_.+wav")
     all_files = glob(os.path.join(data_dir, 'train/audio/*/*wav'))
@@ -349,40 +331,40 @@ if not os.path.exists(directory):
 model_dir = OUTDIR
 
 run_config = tf.contrib.learn.RunConfig(model_dir=model_dir)
-from tensorflow.contrib.learn.python.learn.learn_io.generator_io import generator_input_fn
-test_input_fn = generator_input_fn(
-    x=test_data_generator(paths),
-    batch_size=hparams.batch_size,
-    shuffle=False,
-    num_epochs=1,
-    queue_capacity= 10 * hparams.batch_size,
-    num_threads=1,
-)
+
+trainset, valset = load_data(data_dir)
 
 # it's a magic function :)
-#from tensorflow.contrib.learn.python.learn.learn_io.generator_io import generator_input_fn
+from tensorflow.contrib.learn.python.learn.learn_io.generator_io import generator_input_fn
+
+train_input_fn = generator_input_fn(
+    x=data_generator(trainset, hparams, 'train'),
+    target_key='label',  # you could leave target_key in features, so labels in model_handler will be empty
+    batch_size=hparams.batch_size, shuffle=True, num_epochs=None,
+    queue_capacity=3 * hparams.batch_size + 10, num_threads=1,
+)
+
+val_input_fn = generator_input_fn(
+    x=data_generator(valset, hparams, 'val'),
+    target_key='label',
+    batch_size=hparams.batch_size, shuffle=True, num_epochs=None,
+    queue_capacity=3 * hparams.batch_size + 10, num_threads=1,
+)
 
 
-model = create_model(config=run_config, hparams=hparams)
-it = model.predict(input_fn=test_input_fn)
+def _create_my_experiment(run_config, hparams):
+    exp = tf.contrib.learn.Experiment(
+        estimator=create_model(config=run_config, hparams=hparams),
+        train_input_fn=train_input_fn,
+        eval_input_fn=val_input_fn,
+        train_steps=150000, # just randomly selected params
+        eval_steps=200,  # read source code for steps-epochs ariphmetics
+        train_steps_per_iteration=1000,
+    )
+    return exp
 
-to_predict = 'yes no up down left right on off stop go'.split()
-#print(it.get_shape().as_list())
-with open(os.path.join(model_dir, 'submission1.csv'), 'w') as fout:
-    fout.write('fname,label\n')
-    submission = dict()
-    for t in tqdm(it):
-        fname, label = t['sample'].decode(), id2name[t['label']]
-        #print(fname, label)
-        if label not in to_predict:
-            label = 'unknown'
-        print(fname, label)
-        fout.write('{},{}\n'.format(fname, label))
-        submission[fname] = label
-
-
-
-with open(os.path.join(model_dir, 'submission.csv'), 'w') as fout:
-    fout.write('fname,label\n')
-    for fname, label in submission.items():
-        fout.write('{},{}\n'.format(fname, label))
+tf.contrib.learn.learn_runner.run(
+    experiment_fn=_create_my_experiment,
+    run_config=run_config,
+    schedule="continuous_train_and_eval",
+    hparams=hparams)
