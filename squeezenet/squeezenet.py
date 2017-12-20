@@ -12,6 +12,7 @@ import numpy as np
 
 tf.logging.set_verbosity(tf.logging.INFO)
 num_classes = 30
+batch_size = 64
 model_dir =  'check_points/'# Directory to store checkpoints
 def fire_module(input, squeeze_depth, expand_depth):
     '''Squeezing Layer'''
@@ -120,9 +121,24 @@ def inference(features,batch_size):
         return tf.estimator.EstimatorSpec(
                 mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)"""
 def loss(logits, labels):
-    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=num_classes)
-    loss = tf.losses.softmax_cross_entropy(
-                onehot_labels=onehot_labels, logits=logits)
+    one_vector = tf.ones([batch_size],dtype = tf.int32)
+    lab = tf.subtract(labels,one_vector)
+    onehot_labels = tf.one_hot(indices=tf.cast(lab, tf.int32), depth=num_classes)
+    #print("groundtruth")
+    #print(labels.eval())
+    #labels = tf.Print(labels, [labels], message="This is a: ")
+    #b = tf.add(labels, labels).eval()
+    #b.eval()
+    #onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=num_classes)
+    #print("predicted labels")
+    '''print(sess.run(logits))
+    print("One hot labels")
+    print(sess.run(onehot_labels))'''
+    #loss = tf.losses.softmax_cross_entropy(
+                #onehot_labels=onehot_labels, logits=logits)
+    loss = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(labels=onehot_labels, logits=logits))
+
     correct_prediction = tf.equal(tf.argmax(logits, axis=1), tf.argmax(onehot_labels, axis=1))
     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar("Accuracy",acc)

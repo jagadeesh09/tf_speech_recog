@@ -1,9 +1,10 @@
 import tensorflow as tf
 import cPickle as pickle
 import numpy as np
+import random
 #from object_detection.utils import dataset_util
 dir_path = '/run/user/1000/gvfs/smb-share:server=uncannynas,share=uvdata/Audio/Kaggle/train/pkls/'
-filename = ['set0.pkl','set1.pkl','set2.pkl','set3.pkl']
+filename = ['set0.pkl']#,'set1.pkl','set2.pkl','set3.pkl']
 file_path = []
 ''' Creating list of filepaths'''
 for file_ in filename:
@@ -26,6 +27,8 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 def convert_to_tfrecord(images,labels,name):
     num_labels = np.shape(labels)
+    print("I am printing shape of the images")
+    print(np.shape(images))
     (num_images,depth,rows,cols) = np.shape(images)
     file_name = "set"+name+".tfrecords"
     writer = tf.python_io.TFRecordWriter(file_name)
@@ -69,6 +72,12 @@ for file_ in file_path:
             print(np.shape(arr_))
             print(np.shape(larr_))
         counter = counter + 1
+    del lab_,data_
+    combined_list = list(zip(arr_,larr_))
+    del arr_,larr_
+    random.shuffle(combined_list)
+    arr_,larr_ = zip(*combined_list)
+    print(larr_)
     convert_to_tfrecord(arr_,larr_,str(cnt))
     cnt = cnt + 1
     '''if(cnt == 0):
